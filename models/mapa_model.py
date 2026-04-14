@@ -1,31 +1,30 @@
 class MapaModel:
 
-    ESTILO_NORMAL     = "background-color: #b04acb; border-radius: 8px;"
-    ESTILO_INICIO     = "background-color: white;   border-radius: 8px;"
-    ESTILO_DESTINO    = "background-color: #27ae60;  border-radius: 8px;"
-    ESTILO_INCIDENCIA = "background-color: #e74c3c;  border-radius: 8px;"
-
     FILAS = list("ABCDEFGHIJ")
     COLS  = list(range(1, 11))
 
     def __init__(self):
-        self.inicio     = None
-        self.destino    = None
-        self.incidencias = {}   # clave -> tipo
+        self.inicio      = None
+        self.destino     = None
+        self.incidencias = {}   # clave → {tipo, descripcion}
 
-    # ── Validación ──────────────────────────────────────────
+    # ── Validación ───────────────────────────────────────────
 
     def coordenada_valida(self, coord: str) -> bool:
         if len(coord) < 2:
             return False
-        letra = coord[0].upper()
+        letra  = coord[0].upper()
         numero = coord[1:]
-        return letra in self.FILAS and numero.isdigit() and int(numero) in self.COLS
+        return (
+            letra in self.FILAS
+            and numero.isdigit()
+            and int(numero) in self.COLS
+        )
 
     def normalizar(self, coord: str) -> str:
         return coord[0].upper() + coord[1:]
 
-    # ── Setters ─────────────────────────────────────────────
+    # ── Setters ──────────────────────────────────────────────
 
     def set_inicio(self, coord: str):
         self.inicio = self.normalizar(coord)
@@ -40,6 +39,6 @@ class MapaModel:
     # ── Reset ────────────────────────────────────────────────
 
     def limpiar(self):
-        self.inicio    = None
-        self.destino   = None
+        self.inicio      = None
+        self.destino     = None
         self.incidencias = {}
