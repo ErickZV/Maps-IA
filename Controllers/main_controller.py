@@ -20,7 +20,7 @@ class ControladorPrincipal:
     def _click_overlay(self, event):
         self.vista.ocultar_menu()
 
-    # ── Pintar inicio / destino ──────────────────────────────
+    # ── Calcular y pintar ruta ───────────────────────────────
 
     def calcular_ruta(self):
         inicio  = self.vista.menu_lateral.input_inicio.text().strip()
@@ -38,16 +38,18 @@ class ControladorPrincipal:
             print(f"[ERROR] Coordenada de destino inválida: {destino}")
             return
 
-        self.limpiar_mapa()
-
+        self.vista.limpiar_ruta()
         self.modelo.set_inicio(inicio)
         self.modelo.set_destino(destino)
 
-        self.vista.nodos[self.modelo.inicio].set_estado("inicio")
-        self.vista.nodos[self.modelo.destino].set_estado("destino")
+        camino = self.modelo.calcular_ruta()
 
-        self._repintar_incidencias()
-        print(f"Inicio: {self.modelo.inicio} | Destino: {self.modelo.destino}")
+        if camino is None:
+            print(f"[SIN RUTA] No existe camino de {inicio} a {destino} respetando sentidos.")
+            return
+
+        self.vista.pintar_ruta(camino)
+        print(f"Ruta: {' → '.join(camino)}")
 
     # ── Incidencias ──────────────────────────────────────────
 
@@ -67,18 +69,6 @@ class ControladorPrincipal:
             clave = self.modelo.normalizar(ubicacion)
             self.vista.nodos[clave].set_estado("incidencia")
             print(f"Incidencia '{tipo}' en {clave}: {descripcion}")
-
-    # ── Limpiar ──────────────────────────────────────────────
-
-    def limpiar_mapa(self):
-        for nodo in self.vista.nodos.values():
-            nodo.set_estado("normal")
-        self.modelo.limpiar()
-
-    def _repintar_incidencias(self):
-        for clave in self.modelo.incidencias:
-            if clave in self.vista.nodos:
-                self.vista.nodos[clave].set_estado("incidencia")
 
     def salir(self):
         self.vista.close()
