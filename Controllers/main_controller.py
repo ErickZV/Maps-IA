@@ -1,73 +1,75 @@
 from UI.agregar_incidencias import AgregarIncidencias
+from models.mapa_model import MapaModel
 
 
 class ControladorPrincipal:
 
     def __init__(self, vista):
-        self.vista = vista
+        self.vista  = vista
+        self.modelo = MapaModel()
         self._conectar_eventos()
 
     def _conectar_eventos(self):
-
-        # -------- MENÚ LATERAL --------
         self.vista.boton_menu.clicked.connect(self.vista.mostrar_menu)
         self.vista.menu_lateral.btn_cerrar.clicked.connect(self.vista.ocultar_menu)
         self.vista.overlay.mousePressEvent = self._click_overlay
-
-        # -------- BOTONES DEL MENÚ --------
         self.vista.menu_lateral.btn_calcular.clicked.connect(self.calcular_ruta)
-        self.vista.menu_lateral.btn_incidencia.clicked.connect(self.agregar_incidencia)
-
-    # -------- EVENTOS UI --------
+        self.vista.menu_lateral.btn_incidencia.clicked.connect(self.abrir_agregar_incidencia)
 
     def _click_overlay(self, event):
         self.vista.ocultar_menu()
 
-    # -------- LÓGICA --------
-
     def calcular_ruta(self):
-        inicio = self.vista.menu_lateral.input_inicio.text().strip().upper()
-        destino = self.vista.menu_lateral.input_destino.text().strip().upper()
+        inicio  = self.vista.menu_lateral.input_inicio.text().strip()
+        destino = self.vista.menu_lateral.input_destino.text().strip()
 
         if not inicio or not destino:
-            print("Faltan datos")
+            print("[ERROR] Ingresa el punto de partida y el destino.")
             return
 
-        if inicio not in self.vista.celdas or destino not in self.vista.celdas:
-            print("Puntos inválidos")
+        if not self.modelo.coordenada_valida(inicio):
+            print(f"[ERROR] Coordenada de inicio inválida: {inicio}")
             return
 
-        print(f"Calculando ruta de {inicio} a {destino}")
-        self.limpiar_mapa()
+        if not self.modelo.coordenada_valida(destino):
+            print(f"[ERROR] Coordenada de destino inválida: {destino}")
+            return
 
-        self.vista.celdas[inicio].setStyleSheet("background-color: white; border-radius: 8px;")
-        self.vista.celdas[destino].setStyleSheet("background-color: green; border-radius: 8px;")
+        self.vista.limpiar_ruta()
+        self.vista.menu_lateral.ocultar_resultados()
+        self.modelo.set_inicio(inicio)
+        self.modelo.set_destino(destino)
 
-    def agregar_incidencia(self):
-        """
-        Abre el diálogo, y si el usuario confirma,
-        marca la celda ingresada como incidencia.
-        """
+        camino = self.modelo.calcular_ruta()
+
+        if camino is None:
+            print(f"[SIN RUTA] No existe camino de {inicio} a {destino}.")
+            return
+
+        self.vista.pintar_ruta(camino)
+        self.vista.menu_lateral.mostrar_resultados(
+            self.modelo.distancia_texto(),
+            self.modelo.tiempo_texto()
+        )
+        print(f"Ruta: {' → '.join(camino)}")
+        print(f"Distancia: {self.modelo.distancia_texto()} | Tiempo: {self.modelo.tiempo_texto()}")
+
+    def abrir_agregar_incidencia(self):
         dialogo = AgregarIncidencias(self.vista)
 
         if dialogo.exec():
-            ubicacion = dialogo.get_ubicacion().upper()
-            tipo = dialogo.get_tipo()
+            ubicacion   = dialogo.get_ubicacion().strip()
+            tipo        = dialogo.get_tipo()
             descripcion = dialogo.get_descripcion()
 
-            if ubicacion not in self.vista.celdas:
-                print(f"Ubicación inválida: {ubicacion}")
+            if not self.modelo.coordenada_valida(ubicacion):
+                print(f"[ERROR] Coordenada inválida: {ubicacion}")
                 return
 
-            self.vista.celdas[ubicacion].setStyleSheet(
-                "background-color: red; border-radius: 8px;"
-            )
-            print(f"Incidencia '{tipo}' agregada en {ubicacion}: {descripcion}")
-
-    def limpiar_mapa(self):
-        for celda in self.vista.celdas.values():
-            celda.setStyleSheet("background-color: #b04acb; border-radius: 8px;")
-        print("Mapa limpiado")
+            self.modelo.agregar_incidencia(ubicacion, tipo, descripcion)
+            clave = self.modelo.normalizar(ubicacion)
+            self.vista.nodos[clave].set_estado("incidencia")
+            print(f"Incidencia '{tipo}' en {clave}: {descripcion}")
 
     def salir(self):
         self.vista.close()
