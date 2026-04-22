@@ -13,14 +13,11 @@ class ControladorPrincipal:
         self.vista.boton_menu.clicked.connect(self.vista.mostrar_menu)
         self.vista.menu_lateral.btn_cerrar.clicked.connect(self.vista.ocultar_menu)
         self.vista.overlay.mousePressEvent = self._click_overlay
-
         self.vista.menu_lateral.btn_calcular.clicked.connect(self.calcular_ruta)
         self.vista.menu_lateral.btn_incidencia.clicked.connect(self.abrir_agregar_incidencia)
 
     def _click_overlay(self, event):
         self.vista.ocultar_menu()
-
-    # ── Calcular y pintar ruta ───────────────────────────────
 
     def calcular_ruta(self):
         inicio  = self.vista.menu_lateral.input_inicio.text().strip()
@@ -39,19 +36,23 @@ class ControladorPrincipal:
             return
 
         self.vista.limpiar_ruta()
+        self.vista.menu_lateral.ocultar_resultados()
         self.modelo.set_inicio(inicio)
         self.modelo.set_destino(destino)
 
         camino = self.modelo.calcular_ruta()
 
         if camino is None:
-            print(f"[SIN RUTA] No existe camino de {inicio} a {destino} respetando sentidos.")
+            print(f"[SIN RUTA] No existe camino de {inicio} a {destino}.")
             return
 
         self.vista.pintar_ruta(camino)
+        self.vista.menu_lateral.mostrar_resultados(
+            self.modelo.distancia_texto(),
+            self.modelo.tiempo_texto()
+        )
         print(f"Ruta: {' → '.join(camino)}")
-
-    # ── Incidencias ──────────────────────────────────────────
+        print(f"Distancia: {self.modelo.distancia_texto()} | Tiempo: {self.modelo.tiempo_texto()}")
 
     def abrir_agregar_incidencia(self):
         dialogo = AgregarIncidencias(self.vista)
